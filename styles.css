@@ -8,6 +8,18 @@ body {
     font-family: Helvetica Neue, sans-serif;
 }
 
+
+.footer {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: white;
+}
+
+.footer a {
+    color: #00FF41;
+}
+
 textarea {
     resize: none;
 }
@@ -57,7 +69,7 @@ textarea {
 }
 
 #eliminate.calculating {
-    opacity: 0.95;
+    opacity: 0.9;
     border-width: 0px 0px 4px 0px;
     transform: scale(0.95);
   }
@@ -81,6 +93,10 @@ textarea {
   flex: 1 0 0px;
   text-align: center;
   transition: transform 0.05s ease-in-out, background-color 0.05s ease-in-out;
+  }
+
+  .button:hover {
+    opacity: 0.9;
   }
 
 
@@ -165,6 +181,40 @@ textarea {
 
     100% {
         transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    }
+  }
+
+  #copyicon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: #25a60f;
+    width: 50px;
+    height: 50px;
+    padding: 10px;
+    border-radius: 5px;
+    fill: white;
+  }
+
+  #copyicon:hover {
+    opacity: 0.9;
+  }
+
+  #copyicon:active {
+    animation: copyclick 1s;
+  }
+
+  @keyframes copyclick {
+    0% {
+        transform: scale(1)
+    }
+
+    50% {
+        transform: scale(1.3)
+    }
+
+    100% {
+        transform: scale(1)
     }
   }
 

@@ -2,6 +2,11 @@ let inputField = document.querySelector("#input");
 let outputField = document.querySelector("#output");
 let eliminateButton = document.querySelector("#eliminate");
 let head = document.querySelector("#head");
+let copyicon = document.querySelector("#copyicon");
+
+copyicon.addEventListener("click", () => {
+  navigator.clipboard.writeText(result);
+});
 
 rows = [
   [1, 1, 1, 0],
@@ -18,12 +23,13 @@ let lineIndex = 0;
 
 let calculating = false;
 
-eliminateButton.addEventListener("click", () => {
+function StartElimination() {
   if (calculating) return;
   calculating = true;
   eliminateButton.classList.toggle("calculating");
   head.classList.toggle("active");
   eliminateButton.textContent = "ELIMINATING!";
+  outputField.value = "Eliminating...";
   new Promise((res, rej) => {
     setTimeout(() => {
       Eliminate();
@@ -35,6 +41,12 @@ eliminateButton.addEventListener("click", () => {
     eliminateButton.textContent = "ELIMINATE!";
     head.classList.toggle("active");
   });
+}
+
+eliminateButton.addEventListener("click", StartElimination);
+
+addEventListener("keypress", (e) => {
+  if (e.ctrlKey && e.code == "Enter") StartElimination();
 });
 
 LoadInput();
@@ -88,6 +100,8 @@ function Main() {
   outputField.value = result;
   console.log(result);
 
+  navigator.clipboard.writeText(result);
+
   //   Console.WriteLine("Copy the following into a begin align block in LaTeX:");
   //   Console.WriteLine(result);
   //   Console.WriteLine("");
@@ -125,7 +139,8 @@ function Gauss() {
 
     if (candidate == -1) {
       column++;
-      break;
+      row--;
+      continue;
     }
 
     SwapRows(row, candidate);
