@@ -106,7 +106,7 @@ function Main() {
 
   result +=
     "\n\\end{align*}" +
-    "%notrasmus.com" +
+    "%gauss.notrasmus.com" +
     (evaluateOutput ? ". Numerical evaluation, might not be exact." : "");
 
   outputField.value = result;
