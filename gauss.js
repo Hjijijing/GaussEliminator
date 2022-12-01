@@ -17,11 +17,13 @@ rows = [
 
 let operations = [];
 
-let result = "&";
+let result = "\\begin{align*} \n &";
 
 let lineIndex = 0;
 
 let calculating = false;
+
+let evaluateOutput = false;
 
 function StartElimination() {
   if (calculating) return;
@@ -30,7 +32,7 @@ function StartElimination() {
   head.classList.toggle("active");
   eliminateButton.textContent = "ELIMINATING!";
   outputField.value = "Eliminating...";
-  new Promise((res, rej) => {
+  return new Promise((res, rej) => {
     setTimeout(() => {
       Eliminate();
       res();
@@ -45,8 +47,13 @@ function StartElimination() {
 
 eliminateButton.addEventListener("click", StartElimination);
 
-addEventListener("keypress", (e) => {
+addEventListener("keypress", async (e) => {
   if (e.ctrlKey && e.code == "Enter") StartElimination();
+  if (e.shiftKey && e.code == "Enter") {
+    evaluateOutput = true;
+    await StartElimination();
+    evaluateOutput = false;
+  }
 });
 
 LoadInput();
@@ -84,7 +91,7 @@ function ParseInput() {
 
 function Main() {
   //GetLines();
-  result = "&";
+  result = "\\begin{align*} \n &";
   ParseInput();
   SaveInput();
 
@@ -96,6 +103,11 @@ function Main() {
   SaveStatus();
   Gauss();
   CompleteOperations();
+
+  result +=
+    "\n\\end{align*}" +
+    "%notrasmus.com" +
+    (evaluateOutput ? ". Numerical evaluation, might not be exact." : "");
 
   outputField.value = result;
   console.log(result);
@@ -301,7 +313,15 @@ function StringifyMatrix(matrix) {
   for (let row = 0; row < matrix.length; row++) {
     for (let column = 0; column < matrix[row].length; column++) {
       if (column != 0) result += " & ";
-      result += math.simplify(matrix[row][column]).toTex();
+      let value = math.simplify(matrix[row][column]);
+
+      try {
+        if (!evaluateOutput) throw new Error("Evaluation off");
+        result += math.evaluate(value.toString());
+      } catch (e) {
+        result += value.toTex();
+        console.log(e);
+      }
     }
 
     if (row < matrix.length - 1) result += " \\\\";
