@@ -113,12 +113,6 @@ function Main() {
   console.log(result);
 
   navigator.clipboard.writeText(result);
-
-  //   Console.WriteLine("Copy the following into a begin align block in LaTeX:");
-  //   Console.WriteLine(result);
-  //   Console.WriteLine("");
-  //   Console.WriteLine("Press Any Key to exit");
-  //   Console.ReadLine();
 }
 
 function Gauss() {
@@ -237,7 +231,7 @@ function multiplyRow(index, scalar) {
   operations[index] +=
     " \\cdot " +
     (para ? "\\left(" : "") +
-    math.simplify(scalar + "") +
+    math.simplify(scalar + "").toTex() +
     (para ? "\\right)" : "");
 }
 
@@ -288,7 +282,7 @@ function addRow(addTo, addFrom, addFromScalar) {
   operations[addTo] +=
     (lessThanZero ? "-" : "+") +
     (numericOne
-      ? math.simplify("abs( + " + addFromScalar + ")") + "\\cdot "
+      ? math.simplify("abs( + " + addFromScalar + ")").toTex() + "\\cdot "
       : "") +
     "R" +
     (addFrom + 1);
@@ -299,7 +293,7 @@ function StringifyOperation(matrix) {
 
   for (let row = 0; row < matrix.length; row++) {
     result += matrix[row];
-    if (row < matrix.length - 1) result += " \\\\";
+    if (row < matrix.length - 1) result += " \\\\[6pt]";
   }
 
   result += " \\end{matrix}";
@@ -324,7 +318,7 @@ function StringifyMatrix(matrix) {
       }
     }
 
-    if (row < matrix.length - 1) result += " \\\\";
+    if (row < matrix.length - 1) result += " \\\\[6pt]";
   }
 
   result += " \\end{bmatrix}";
