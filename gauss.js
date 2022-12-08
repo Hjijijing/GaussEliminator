@@ -84,6 +84,7 @@ let standardOptions = {
   printLink: true,
   spacing: "6pt",
   switch: false,
+  inverse: false,
 };
 
 let options = { ...standardOptions };
@@ -187,6 +188,8 @@ function ParseInput() {
       if (option.startsWith("vspace")) {
         options.spacing = option.split("=")[1];
       }
+
+      if (option == "inverse") options.inverse = true;
     }
   }
 
@@ -205,6 +208,22 @@ function ParseInput() {
     }
 
     rows[i] = columns;
+  }
+
+  if (options.inverse) {
+    let longestRow = -1;
+
+    for (let row = 0; row < rows.length; row++) {
+      if (rows[row].length > longestRow) longestRow = rows[row].length;
+      let rowLength = rows[row].length;
+      for (let column = 0; column < rowLength; column++) {
+        rows[row].push(row == column ? "1" : "0");
+      }
+    }
+
+    for (let i = 0; i < longestRow; i++) {
+      arrayStructure += "c";
+    }
   }
 }
 
