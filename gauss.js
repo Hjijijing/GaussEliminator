@@ -102,7 +102,7 @@ function StartElimination() {
     setTimeout(() => {
       Eliminate();
       res();
-    }, 1000);
+    }, 100);
   }).then(() => {
     calculating = false;
     eliminateButton.classList.toggle("calculating");
