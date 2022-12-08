@@ -199,7 +199,7 @@ function ParseInput() {
     for (let j = 0; j < split.length; j++) {
       if (split[j] == "") continue;
       if (split[j] == "|") {
-        arrayStructure += "|";
+        if (i == 0) arrayStructure += "|";
         continue;
       } else {
         if (i == 0) arrayStructure += "c";
