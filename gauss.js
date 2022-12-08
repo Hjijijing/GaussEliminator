@@ -3,9 +3,60 @@ let outputField = document.querySelector("#output");
 let eliminateButton = document.querySelector("#eliminate");
 let head = document.querySelector("#head");
 let copyicon = document.querySelector("#copyicon");
+let latexoutput = document.querySelector("#latexoutput");
+
+let queryString = window.location.search;
+
+function renderOutput() {
+  while (latexoutput.firstChild) {
+    latexoutput.removeChild(latexoutput.firstChild);
+  }
+
+  katex.render(`${result}`, latexoutput, {
+    throwOnError: false,
+    displayMode: true,
+  });
+}
+
+LoadInput();
+
+if (queryString.length > 1) {
+  queryString = queryString.substring(1);
+  loadQuery(queryString);
+}
+
+function loadQuery(query) {
+  let l = query.split(";");
+  let output = "";
+  for (let i = 0; i < l.length; i++) {
+    output += l[i].split(":").join(" ");
+    if (i != l.length - 1) output += "\n";
+  }
+
+  inputField.value = output;
+}
+
+function getQuery() {
+  let output = "";
+  let inputSplit = inputField.value.split("\n");
+
+  for (let i = 0; i < inputSplit.length; i++) {
+    let line = inputSplit[i];
+
+    line = line.replaceAll(" ", "&");
+    output += line;
+    if (i != inputSplit.length - 1) output += ";";
+  }
+
+  return output;
+}
 
 copyicon.addEventListener("click", () => {
-  navigator.clipboard.writeText(result);
+  try {
+    navigator.clipboard.writeText(result);
+  } catch (e) {
+    //console.error("Could not copy to clipboard");
+  }
 });
 
 rows = [
@@ -17,13 +68,27 @@ rows = [
 
 let operations = [];
 
-let result = "\\begin{align*} \n &";
+let startResult = "\\begin{align*}  \n & ";
+let result = startResult;
 
 let lineIndex = 0;
 
 let calculating = false;
 
 let evaluateOutput = false;
+
+let standardOptions = {
+  divideVariables: false,
+  matrixOpen: " \\left[ ",
+  matrixClose: " \\right] ",
+  printLink: true,
+  spacing: "6pt",
+  switch: false,
+};
+
+let options = { ...standardOptions };
+
+let arrayStructure = "";
 
 function StartElimination() {
   if (calculating) return;
@@ -56,19 +121,19 @@ addEventListener("keypress", async (e) => {
   }
 });
 
-LoadInput();
-
 Eliminate();
 
 function Eliminate() {
   try {
     Main();
   } catch (e) {
-    console.log(e);
+    //console.error(e);
   }
 }
 
 function ParseInput() {
+  arrayStructure = "";
+  options = { ...standardOptions };
   rows = [];
 
   let lines = inputField.value.split("\n");
@@ -77,12 +142,66 @@ function ParseInput() {
     if (lines[i] == "") lines.splice(i, 1);
   }
 
+  if (
+    lines.length > 1 &&
+    lines[lines.length - 1].toLowerCase().startsWith("opt")
+  ) {
+    let optionInput = lines[lines.length - 1].split(" ");
+    lines.splice(lines.length - 1, 1);
+
+    for (let i = 1; i < optionInput.length; i++) {
+      let option = optionInput[i];
+
+      if (option == "nonzero") options.divideVariables = true;
+
+      if (option == "bmatrix") {
+        options.matrixOpen = "\\left[";
+        options.matrixClose = "\\right]";
+      }
+      if (option == "Bmatrix") {
+        options.matrixOpen = "\\left\\{";
+        options.matrixClose = "\\right\\}";
+      }
+      if (option == "vmatrix") {
+        options.matrixOpen = "\\left|";
+        options.matrixClose = "\\right|";
+      }
+      if (option == "Vmatrix") {
+        options.matrixOpen = "\\left|\\left|";
+        options.matrixClose = "\\right|\\right|";
+      }
+      if (option == "matrix") {
+        options.matrixOpen = "";
+        options.matrixClose = "";
+      }
+      if (option == "pmatrix") {
+        options.matrixOpen = "\\left(";
+        options.matrixClose = "\\right)";
+      }
+
+      if (option == "switch") options.switch = true;
+
+      if (option == "link") options.printLink = true;
+      if (option == "nolink") options.printLink = false;
+
+      if (option.startsWith("vspace")) {
+        options.spacing = option.split("=")[1];
+      }
+    }
+  }
+
   for (let i = 0; i < lines.length; i++) {
     let split = lines[i].split(" ");
     let columns = [];
     for (let j = 0; j < split.length; j++) {
       if (split[j] == "") continue;
-      columns.push(split[j]);
+      if (split[j] == "|") {
+        arrayStructure += "|";
+        continue;
+      } else {
+        if (i == 0) arrayStructure += "c";
+        columns.push(split[j]);
+      }
     }
 
     rows[i] = columns;
@@ -91,11 +210,11 @@ function ParseInput() {
 
 function Main() {
   //GetLines();
-  result = "\\begin{align*} \n &";
+  result = startResult;
   ParseInput();
   SaveInput();
 
-  console.log(rows);
+  // console.log(rows);
 
   operations = [];
   fillOperations();
@@ -107,12 +226,21 @@ function Main() {
   result +=
     "\n\\end{align*}" +
     "%gauss.notrasmus.com" +
-    (evaluateOutput ? ". Numerical evaluation, might not be exact." : "");
+    (options.printLink ? `/?` + getQuery() : "") +
+    (evaluateOutput ? " . Numerical evaluation, might not be exact." : "");
 
   outputField.value = result;
-  console.log(result);
+  //console.log(result);
 
-  navigator.clipboard.writeText(result);
+  try {
+    renderOutput();
+  } catch (e) {}
+
+  try {
+    navigator.clipboard.writeText(result);
+  } catch (e) {
+    //console.error("Could not copy to clipboard");
+  }
 }
 
 function Gauss() {
@@ -123,6 +251,7 @@ function Gauss() {
 
     let candidate = -1;
     let numValue = math.Infinity;
+    let potential = null;
 
     for (let j = row; j < rows.length; j++) {
       let check = rows[j][column];
@@ -136,6 +265,7 @@ function Gauss() {
         isCandidate = false;
         // isCandidate = 1 < numValue;
         // numValue = isCandidate ? 1 : numValue;
+        potential = j;
       }
 
       if (isCandidate) {
@@ -144,9 +274,13 @@ function Gauss() {
     }
 
     if (candidate == -1) {
-      column++;
-      row--;
-      continue;
+      if (potential != null && options.divideVariables) {
+        candidate = potential;
+      } else {
+        column++;
+        row--;
+        continue;
+      }
     }
 
     SwapRows(row, candidate);
@@ -188,8 +322,12 @@ function SwapRows(a, b) {
 
   //operations += StringifyMatrix(createOperation(op));
 
-  operations[a] += "=R" + (b + 1);
-  operations[b] += "=R" + (a + 1);
+  operations[a] += options.switch
+    ? "R_{" + (a + 1) + "}\\leftrightarrow R_{" + (b + 1) + "}"
+    : "=R_{" + (b + 1) + "}";
+  operations[b] += options.switch
+    ? "R_{" + (b + 1) + "}\\leftrightarrow R_{" + (a + 1) + "}"
+    : "=R_{" + (a + 1) + "}";
 }
 
 function createOperation(op) {
@@ -279,30 +417,42 @@ function addRow(addTo, addFrom, addFromScalar) {
     numericOne = false;
   }
 
+  let cantEvaluate = false;
+
+  try {
+    math.evaluate("" + addFromScalar);
+  } catch (e) {
+    cantEvaluate = true;
+  }
+
   operations[addTo] +=
     (lessThanZero ? "-" : "+") +
     (numericOne
-      ? math.simplify("abs( + " + addFromScalar + ")").toTex() + "\\cdot "
+      ? math.simplify("abs(" + addFromScalar + ")").toTex() + "\\cdot "
       : "") +
-    "R" +
-    (addFrom + 1);
+    (cantEvaluate
+      ? "(" + math.simplify(addFromScalar).toTex() + ") \\cdot "
+      : "") +
+    "R_{" +
+    (addFrom + 1) +
+    "}";
 }
 
 function StringifyOperation(matrix) {
-  let result = " \\begin{matrix} ";
+  let result = " \\begin{array}{c} ";
 
   for (let row = 0; row < matrix.length; row++) {
     result += matrix[row];
     if (row < matrix.length - 1) result += " \\\\[6pt]";
   }
 
-  result += " \\end{matrix}";
+  result += " \\end{array}";
 
   return result;
 }
 
 function StringifyMatrix(matrix) {
-  let result = " \\begin{bmatrix} ";
+  let result = ` ${options.matrixOpen}\\begin{array}{${arrayStructure}} `;
 
   for (let row = 0; row < matrix.length; row++) {
     for (let column = 0; column < matrix[row].length; column++) {
@@ -314,14 +464,14 @@ function StringifyMatrix(matrix) {
         result += math.evaluate(value.toString());
       } catch (e) {
         result += value.toTex();
-        console.log(e);
+        // console.error(e);
       }
     }
 
     if (row < matrix.length - 1) result += " \\\\[6pt]";
   }
 
-  result += " \\end{bmatrix}";
+  result += ` \\end{array}${options.matrixClose}`;
 
   return result;
 }
@@ -332,9 +482,9 @@ function SaveStatus() {
 
 function CompleteOperations() {
   if (!isNewOperations()) return;
-  result += "" + StringifyOperation(createOperation(operations));
+  result += "\\!\\!\\! " + StringifyOperation(createOperation(operations));
   fillOperations();
-  result += "\\\\ \n \\sim &";
+  result += `\\\\[${options.spacing}] \n \\sim &`;
   SaveStatus();
 }
 
@@ -354,11 +504,21 @@ function isNewOperations() {
 
 function SaveInput() {
   let toSave = JSON.stringify({ input: inputField.value });
-  setCookie("savedinput", toSave, 30);
+  try {
+    setCookie("savedinput", toSave, 30);
+  } catch (e) {
+    //console.error("Could not set cookie");
+  }
 }
 
 function LoadInput() {
-  let cookieInput = JSON.parse(getCookie("savedinput"));
+  let cookieInput = null;
+  try {
+    cookieInput = JSON.parse(getCookie("savedinput"));
+  } catch (e) {
+    //console.error("Could not load cookie");
+  }
+
   if (cookieInput) inputField.value = cookieInput.input;
 }
 
@@ -381,3 +541,43 @@ function getCookie(name) {
   }
   return null;
 }
+
+// Initialising the canvas
+var canvas = document.querySelector("canvas"),
+  ctx = canvas.getContext("2d");
+
+// Setting the width and height of the canvas
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Setting up the letters
+var letters = "RASMUS";
+letters = letters.split("");
+
+// Setting up the columns
+var fontSize = 10,
+  columns = canvas.width / fontSize;
+
+// Setting up the drops
+var drops = [];
+for (var i = 0; i < columns; i++) {
+  drops[i] = 1;
+}
+
+// Setting up the draw function
+function draw() {
+  ctx.fillStyle = "rgba(0, 0, 0, .1)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (var i = 0; i < drops.length; i++) {
+    var text = letters[Math.floor(Math.random() * letters.length)];
+    ctx.fillStyle = "#0f0";
+    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+    drops[i]++;
+    if (drops[i] * fontSize > canvas.height && Math.random() > 0.95) {
+      drops[i] = 0;
+    }
+  }
+}
+
+// Loop the animation
+setInterval(draw, 33);
