@@ -482,7 +482,7 @@ function addRow(addTo, addFrom, addFromScalar) {
   let lessThanZero;
 
   try {
-    lessThanZero = math.evaluate(addFromScalar + " < 1");
+    lessThanZero = math.evaluate(addFromScalar + " < 0");
   } catch (e) {
     lessThanZero = false;
   }
